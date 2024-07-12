@@ -1,0 +1,110 @@
+---
+title: "ANALISE MODELO REGRESSAO LINEAR 2"
+output: html_notebook
+---
+
+```{r}
+# CARREGA PACOTES 
+library(tidyverse)
+library(skimr)
+library(plotly)
+```
+
+```{r}
+# CARREGA BASE INICIAL PARA TRATAMENTO
+base <- read.csv2(file = "casos_obitos_doencas_preexistentes.csv",header = TRUE)
+```
+
+```{r}
+# PEGA SOMENTE A CIDADE DE SANTOS
+base <- base %>% 
+  dplyr::filter(nome_munic == "Santos")
+```
+
+```{r}
+# PEGA SOMENTE AS COLUNAS DE INTERESSE (diabetes,cs_sexo,obito e idade)
+base_modelo <- base %>% 
+  dplyr::select(nome_munic,idade,cs_sexo,diabetes,obito)
+```
+
+```{r}
+# AJUSTA COLUNA obito 0 = NAO OBITO , 1 = SIM obito
+base_modelo$obito[base_modelo$obito == "NAO"] <- "0"
+base_modelo$obito[base_modelo$obito == "SIM"] <- "1"
+```
+
+
+```{r}
+# MANTEM NA BASE SOMENTE SEXOS (MASCULINO E FEMININO)
+base_modelo <- base_modelo %>% 
+  dplyr::filter(cs_sexo != "INDEFINIDO")
+```
+
+
+```{r}
+# AJUSTA COLUNA diabetes REMOVE AS OBSERVACOES COM "IGNORADO"
+base_modelo <- base_modelo %>% 
+  dplyr::filter(diabetes != "IGNORADO")
+```
+
+```{r}
+# VERIFICA VALORES (NA)
+skim(base_modelo)
+```
+
+```{r}
+# PLOTA BASE AJUSTADA
+plot_ly(base_modelo, labels = ~ cs_sexo, type = "pie")
+plot_ly(base_modelo, labels = ~ diabetes, type = "pie")
+```
+
+```{r}
+# MUITOS CASOS DE DIABETES EM SANTOS APOS LIMPEZA DA BASE
+table(base_modelo$diabetes)
+```
+
+```{r}
+# VERIFICA A RELACAO IDADE x OBITO
+plot(base_modelo$idade,base_modelo$obito)
+```
+
+```{r}
+# CRIA O MODELO DE REGRESSAO LOGISTICA 
+modelo2 <- glm(obito ~ idade, data = base_modelo, family = "binomial")
+```
+
+```{r}
+# VERIFICA MODELO
+summary(modelo2)
+```
+
+```{r}
+# MODELO COMPARADO AOS DADOS
+plot(base_modelo$idade,base_modelo$obito, col = "blue")
+points(base_modelo$idade,modelo2$fitted.values, col = "red")
+```
+
+```{r}
+# TESTAR O MODELO COM A PROPRIA BASE
+previsao <- predict(modelo2,newdata = base_modelo, type = "response")
+previsao <- previsao >= 0.3
+```
+
+```{r}
+# FALSE = NAO TEVE OBITO / TRUE = TEVE OBITO
+table(previsao)
+```
+
+```{r}
+# MATRIZ CONFUSAO 
+matriz_confusao <- table(previsao,base_modelo$obito)
+matriz_confusao
+```
+
+```{r}
+# ACURACIA
+acerto <- (matriz_confusao[1] + matriz_confusao[4]) / sum(matriz_confusao)
+acerto
+```
+
+

@@ -1,0 +1,109 @@
+---
+title: "Modelo de Regressao Logistica"
+output: html_notebook
+---
+
+
+```{r echo=FALSE}
+library(tidyverse)
+library(skimr)
+```
+
+```{r}
+install.packages("plotly")
+library(plotly)
+```
+
+```{r}
+dataset <- read_csv2(file = "casos_obitos_doencas_preexistentes.csv")
+```
+
+```{r}
+glimpse(dataset)
+```
+
+```{r}
+basefiltrada <- dataset %>% 
+  select(diabetes,cs_sexo,obito)
+```
+
+```{r}
+plot_ly(basefiltrada,labels = ~ diabetes,type = "pie")
+```
+```{r}
+basefiltrada <- basefiltrada %>% 
+  filter(diabetes != "IGNORADO")
+```
+```{r}
+plot_ly(basefiltrada, labels = ~ diabetes, type ="pie")
+```
+
+```{r}
+skim(basefiltrada)
+```
+
+```{r}
+basefiltrada <- basefiltrada %>% 
+  filter(cs_sexo == "MASCULINO" | cs_sexo == "FEMININO")
+```
+
+```{r}
+plot_ly(basefiltrada, labels = ~  cs_sexo, type = "pie")
+```
+
+
+```{r}
+plot_ly(basefiltrada, labels = ~ obito, type = "pie")
+```
+```{r}
+glimpse(basefiltrada)
+```
+```{r}
+basefiltrada$diabetes <- forcats::as_factor(basefiltrada$diabetes)
+basefiltrada$cs_sexo <- forcats::as_factor(basefiltrada$cs_sexo)
+```
+
+```{r}
+levels(basefiltrada$diabetes)
+levels(basefiltrada$cs_sexo)
+levels(basefiltrada$obito)
+```
+```{r}
+basefiltrada$obito[basefiltrada$obito == 0] <- "NAO"
+basefiltrada$obito[basefiltrada$obito == 1] <- "SIM"
+```
+
+```{r}
+basefiltrada$obito <- forcats::as_factor(basefiltrada$obito)
+levels(basefiltrada$obito)
+```
+```{r}
+# cria modelo de regressao logistica 
+modelo <- glm(obito ~ diabetes + cs_sexo, family = binomial, data = basefiltrada)
+```
+
+```{r}
+# analisa ausencia de outlier deve ser entre MIN -3 e MAX 3 
+library(MASS)
+summary(stdres(modelo))
+```
+```{r}
+# Multicolinearidade VIF < 10
+vif(modelo)
+```
+
+```{r}
+# ANALISE DO MODELO 
+summary(modelo)
+```
+```{r}
+# VEFIFICAR PROBABILDADES DO MODELO (RAZAO DE CHANCE DO INTERVALO DE CONFIANCA DE 95%)
+exp(coef(modelo))
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
